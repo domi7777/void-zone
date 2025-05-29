@@ -62,11 +62,6 @@ export default class MainScene extends Phaser.Scene {
     this.updateGroundGrid();
   }
 
-  private getScaledY(progress: number, height: number): number {
-    // More linear scaling for classic arcade style
-    return this.horizonY + (height - this.horizonY) * progress;
-  }
-
   private updateGroundGrid() {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
@@ -77,7 +72,6 @@ export default class MainScene extends Phaser.Scene {
     // Calculate base dimensions
     const gridWidth = width * 1.5;
     const vanishingX = width / 2;
-    const columnWidth = gridWidth / this.gridColumns;
     const totalDepth = this.cellSize * this.maxDepth;
 
     // Draw horizontal lines with increasing gaps
@@ -115,7 +109,7 @@ export default class MainScene extends Phaser.Scene {
         const t = i / numPoints;
         // Add subtle curve with quadratic easing
         const curve = t * t;
-        const blend = 0.7; // Blend between linear and curved (0.85 = 85% linear, 15% curved)
+        const blend = 0.7; // Blend between linear and curved
         const y = this.horizonY + stopBeforeHorizon + (height - this.horizonY - stopBeforeHorizon) * (1 - t);
         const x = vanishingX + xOffset * (1 - (t * blend + curve * (1 - blend)));
         this.groundGrid.lineTo(x, y);
