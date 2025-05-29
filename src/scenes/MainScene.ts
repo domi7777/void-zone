@@ -6,11 +6,11 @@ export default class MainScene extends Phaser.Scene {
   
   // Perspective constants
   private readonly horizonY: number = 150;
-  private readonly gridColumns: number = 12; // More vertical lines for better effect
+  private readonly gridColumns: number = 12;
   private gridZ: number = 0;
   private readonly scrollSpeed: number = 4;
-  private readonly cellSize: number = 60; // Smaller cells for denser grid
-  private readonly maxDepth: number = 15; // More depth for smoother perspective
+  private readonly cellSize: number = 60;
+  private readonly maxDepth: number = 15;
   
   private pointer: Phaser.Input.Pointer | null = null;
 
@@ -58,8 +58,8 @@ export default class MainScene extends Phaser.Scene {
   }
 
   update() {
-    // Only update Z position for horizontal line movement
-    this.gridZ = (this.gridZ + this.scrollSpeed) % this.cellSize;
+    // Update Z position for horizontal line movement (now coming towards viewer)
+    this.gridZ = (this.gridZ - this.scrollSpeed + this.cellSize) % this.cellSize;
     this.updateGroundGrid();
   }
 
@@ -106,13 +106,16 @@ export default class MainScene extends Phaser.Scene {
       this.groundGrid.strokePath();
     }
 
-    // Draw horizontal lines
-    for (let z = this.gridZ; z < this.cellSize * this.maxDepth; z += this.cellSize) {
-      const y = this.projectPoint(0, z, width, height).screenY;
+    // Draw horizontal lines coming towards viewer
+    const totalDepth = this.cellSize * this.maxDepth;
+    for (let z = 0; z < totalDepth; z += this.cellSize) {
+      const currentZ = (z + this.gridZ) % totalDepth;
+      const zFromViewer = totalDepth - currentZ; // Invert Z so lines move towards viewer
+      const scale = zFromViewer / totalDepth;
+      const y = this.horizonY + (height - this.horizonY) * scale;
       
       if (y >= this.horizonY && y <= height) {
-        const perspectiveScale = (y - this.horizonY) / (height - this.horizonY);
-        const lineWidth = gridWidth * perspectiveScale;
+        const lineWidth = gridWidth * scale;
         
         this.groundGrid.beginPath();
         this.groundGrid.moveTo(width / 2 - lineWidth / 2, y);
