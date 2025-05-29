@@ -64,9 +64,8 @@ export default class MainScene extends Phaser.Scene {
   }
 
   private getScaledY(progress: number, height: number): number {
-    // Non-linear scaling for better perspective effect
-    const scale = Math.pow(progress, this.perspectiveStrength);
-    return this.horizonY + (height - this.horizonY) * scale;
+    // More linear scaling for classic arcade style
+    return this.horizonY + (height - this.horizonY) * progress;
   }
 
   private updateGroundGrid() {
@@ -77,9 +76,8 @@ export default class MainScene extends Phaser.Scene {
     this.groundGrid.lineStyle(1, 0x00ff00);
 
     // Calculate base dimensions
-    const gridWidth = width * 1.2;
+    const gridWidth = width * 1.5; // Increased for wider grid
     const vanishingX = width / 2;
-    const gridStartX = width / 2 - gridWidth / 2;
     const columnWidth = gridWidth / this.gridColumns;
     const totalDepth = this.cellSize * this.maxDepth;
 
@@ -90,7 +88,7 @@ export default class MainScene extends Phaser.Scene {
       const y = this.getScaledY(progress, height);
       
       if (y >= this.horizonY && y <= height) {
-        // Calculate line width with perspective
+        // Linear perspective scaling
         const perspectiveWidth = gridWidth * progress;
         const lineStartX = vanishingX - (perspectiveWidth / 2);
         const lineEndX = vanishingX + (perspectiveWidth / 2);
@@ -104,20 +102,20 @@ export default class MainScene extends Phaser.Scene {
 
     // Draw vertical lines
     for (let col = 0; col <= this.gridColumns; col++) {
-      const xOffset = col * columnWidth - gridWidth / 2;
+      const xOffset = (col * columnWidth) - (gridWidth / 2);
       this.groundGrid.beginPath();
       
-      // Start from bottom of screen
-      const bottomY = height;
-      let prevX = vanishingX + xOffset;
-      this.groundGrid.moveTo(prevX, bottomY);
+      // Draw from bottom to horizon
+      let y = height;
+      let x = vanishingX + xOffset;
+      this.groundGrid.moveTo(x, y);
       
-      // Draw line segments up to horizon
-      for (let progress = 0.95; progress >= 0; progress -= 0.05) {
-        const y = this.getScaledY(progress, height);
-        if (y < this.horizonY) break;
+      while (y > this.horizonY) {
+        // Calculate perspective for this vertical position
+        const progress = (y - this.horizonY) / (height - this.horizonY);
+        x = vanishingX + (xOffset * progress);
+        y -= 5; // Smaller steps for smoother lines
         
-        const x = vanishingX + (xOffset * progress);
         this.groundGrid.lineTo(x, y);
       }
       
