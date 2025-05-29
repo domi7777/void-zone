@@ -161,7 +161,7 @@ export class Obstacle extends Phaser.GameObjects.Container {
         this.shape.lineTo(points[5].x, points[5].y);
     }
 
-    public preUpdate(time: number, delta: number): void {
+    public preUpdate(_time: number, delta: number): void {
         this._rotation = (this._rotation + delta * 0.001) % (Math.PI * 2);
         this.setRotation(this._rotation);
     }
