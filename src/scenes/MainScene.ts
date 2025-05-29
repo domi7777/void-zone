@@ -12,8 +12,14 @@ export default class MainScene extends Phaser.Scene {
   // Obstacle management
   private obstacles: Obstacle[] = [];
   private nextObstacleSpawn: number = 0;
-  private readonly obstacleSpeed: number = 5;
-  private readonly spawnInterval: number = 2000; // ms between spawns
+  private readonly obstacleSpeed: number = 8;
+  private readonly spawnInterval: number = 1000; // ms between spawns
+
+  // Score tracking
+  private score: number = 0;
+  private scoreText!: Phaser.GameObjects.Text;
+  private isInvulnerable: boolean = false;
+  private readonly invulnerabilityTime: number = 1500; // ms
 
   constructor() {
     super('MainScene');
@@ -46,6 +52,22 @@ export default class MainScene extends Phaser.Scene {
       );
     });
 
+    // Add score text
+    this.scoreText = this.add.text(16, 16, 'Score: 0', {
+      fontSize: '32px',
+      color: '#fff'
+    });
+    
+    // Start score incrementing
+    this.time.addEvent({
+      delay: 100, // Increase score every 100ms
+      callback: () => {
+        this.score += 1;
+        this.scoreText.setText(`Score: ${this.score}`);
+      },
+      loop: true
+    });
+
     // Set initial spawn time
     this.nextObstacleSpawn = 0;
   }
@@ -69,16 +91,14 @@ export default class MainScene extends Phaser.Scene {
       const shouldRemove = obstacle.update(this.obstacleSpeed);
 
       // Check collision with player
-      if (obstacle.isCollidingWith(this.player)) {
-        // Flash the player red when hit
-        this.player.setFillStyle(0xff0000);
-        this.time.delayedCall(100, () => {
-          this.player.setFillStyle(0x00ff00);
-        });
+      if (!this.isInvulnerable && obstacle.isCollidingWith(this.player)) {
+        this.handleCollision();
       }
 
       // Remove obstacle if it's passed the screen
       if (shouldRemove) {
+        this.score += 10; // Bonus points for surviving an obstacle
+        this.scoreText.setText(`Score: ${this.score}`);
         obstacle.destroy();
         this.obstacles.splice(i, 1);
       }
@@ -90,5 +110,33 @@ export default class MainScene extends Phaser.Scene {
     const z = 1000; // Start from far away
     const obstacle = new Obstacle(this, x, z);
     this.obstacles.push(obstacle);
+  }
+
+  private handleCollision() {
+    // Set invulnerability
+    this.isInvulnerable = true;
+    
+    // Visual feedback
+    this.player.setFillStyle(0xff0000);
+    
+    // Screen shake effect
+    this.cameras.main.shake(200, 0.01);
+    
+    // Deduct points
+    this.score = Math.max(0, this.score - 50);
+    this.scoreText.setText(`Score: ${this.score}`);
+    
+    // Flash player and restore color
+    this.tweens.add({
+      targets: this.player,
+      alpha: 0.5,
+      duration: 100,
+      yoyo: true,
+      repeat: 7,
+      onComplete: () => {
+        this.player.setFillStyle(0x00ff00);
+        this.isInvulnerable = false;
+      }
+    });
   }
 }
