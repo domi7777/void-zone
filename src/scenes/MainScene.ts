@@ -1,26 +1,24 @@
 import Phaser from 'phaser';
 
-interface GridLine {
-  line: Phaser.GameObjects.Graphics;
-  z: number;
-}
-
 export default class MainScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Triangle;
   private groundGrid!: Phaser.GameObjects.Graphics;
-  private readonly horizonY: number = 200;
-  private readonly gridSpacing: number = 50;
-  private readonly maxZ: number = 1000;
+  
+  // Perspective constants
+  private readonly horizonY: number = 150;
+  private readonly gridColumns: number = 12; // More vertical lines for better effect
+  private gridZ: number = 0;
+  private readonly scrollSpeed: number = 4;
+  private readonly cellSize: number = 60; // Smaller cells for denser grid
+  private readonly maxDepth: number = 15; // More depth for smoother perspective
+  
   private pointer: Phaser.Input.Pointer | null = null;
-  private gridOffset: number = 0;
-  private readonly verticalLines: number = 10; // Number of vertical lines on each side
 
   constructor() {
     super('MainScene');
   }
 
   create() {
-    // Create ground grid
     this.groundGrid = this.add.graphics();
 
     // Create player
@@ -43,7 +41,6 @@ export default class MainScene extends Phaser.Scene {
         const deltaX = pointer.x - this.pointer.x;
         const deltaY = pointer.y - this.pointer.y;
         
-        // Move player with constraints
         this.player.x = Phaser.Math.Clamp(
           this.player.x + deltaX,
           50,
@@ -55,51 +52,73 @@ export default class MainScene extends Phaser.Scene {
           this.cameras.main.height - 50
         );
         
-        // Update pointer position
         this.pointer = pointer;
       }
     });
   }
 
   update() {
-    // Update grid offset for scrolling effect
-    this.gridOffset = (this.gridOffset + 2) % this.gridSpacing;
+    // Only update Z position for horizontal line movement
+    this.gridZ = (this.gridZ + this.scrollSpeed) % this.cellSize;
     this.updateGroundGrid();
+  }
+
+  private projectPoint(x: number, z: number, width: number, height: number): { screenX: number, screenY: number } {
+    const centerX = width / 2;
+    const vanishingPointY = this.horizonY;
+    
+    // Improved perspective calculation
+    const distance = z + 100; // Add minimum distance to prevent extreme distortion
+    const scale = 1 - (z / (this.maxDepth * this.cellSize));
+    const perspectiveY = vanishingPointY + (height - vanishingPointY) * scale;
+    
+    // Scale X based on Y position
+    const xScale = (perspectiveY - vanishingPointY) / (height - vanishingPointY);
+    const screenX = centerX + (x * xScale);
+
+    return {
+      screenX,
+      screenY: perspectiveY
+    };
   }
 
   private updateGroundGrid() {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
-    const vanishingPointX = width / 2;
-    const groundY = height;
-
+    
     this.groundGrid.clear();
     this.groundGrid.lineStyle(1, 0x00ff00);
 
-    // Draw horizontal lines with perspective
-    for (let z = this.gridOffset; z < this.maxZ; z += this.gridSpacing) {
-      const perspective = 1 - (z / this.maxZ);
-      const y = this.horizonY + (groundY - this.horizonY) * perspective;
-      
-      // Calculate width at this depth
-      const lineWidth = width * (1 - perspective * 0.8); // 0.8 to keep some width at horizon
-      
-      // Draw horizontal line
+    // Draw vertical lines first (fixed position)
+    const gridWidth = width * 1.2; // Slightly wider than screen
+    const startX = -gridWidth / 2;
+    const columnWidth = gridWidth / this.gridColumns;
+
+    // Draw vertical lines
+    for (let col = 0; col <= this.gridColumns; col++) {
+      const x = startX + col * columnWidth;
       this.groundGrid.beginPath();
-      this.groundGrid.moveTo(vanishingPointX - lineWidth / 2, y);
-      this.groundGrid.lineTo(vanishingPointX + lineWidth / 2, y);
+      this.groundGrid.moveTo(
+        width / 2 + x * ((height - this.horizonY) / (height - this.horizonY)),
+        height
+      );
+      this.groundGrid.lineTo(width / 2 + x * 0.1, this.horizonY);
       this.groundGrid.strokePath();
     }
 
-    // Draw vertical lines converging to vanishing point
-    for (let i = -this.verticalLines; i <= this.verticalLines; i++) {
-      const xRatio = i / this.verticalLines;
-      const startX = vanishingPointX + width * 0.5 * xRatio;
+    // Draw horizontal lines
+    for (let z = this.gridZ; z < this.cellSize * this.maxDepth; z += this.cellSize) {
+      const y = this.projectPoint(0, z, width, height).screenY;
       
-      this.groundGrid.beginPath();
-      this.groundGrid.moveTo(startX, groundY);
-      this.groundGrid.lineTo(vanishingPointX, this.horizonY);
-      this.groundGrid.strokePath();
+      if (y >= this.horizonY && y <= height) {
+        const perspectiveScale = (y - this.horizonY) / (height - this.horizonY);
+        const lineWidth = gridWidth * perspectiveScale;
+        
+        this.groundGrid.beginPath();
+        this.groundGrid.moveTo(width / 2 - lineWidth / 2, y);
+        this.groundGrid.lineTo(width / 2 + lineWidth / 2, y);
+        this.groundGrid.strokePath();
+      }
     }
   }
 }
