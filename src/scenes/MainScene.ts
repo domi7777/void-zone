@@ -108,13 +108,14 @@ export default class MainScene extends Phaser.Scene {
       this.groundGrid.beginPath();
       this.groundGrid.moveTo(startX, height);
 
-      // Draw straight lines from bottom to horizon with linear perspective
+      // Draw straight lines from bottom to near horizon
       const numPoints = 50;
+      const stopBeforeHorizon = -50; // pixels before horizon
       for (let i = 0; i <= numPoints; i++) {
         const t = i / numPoints;
-        // Linear interpolation for vertical lines
-        const y = this.horizonY + (height - this.horizonY) * (1 - t);
-        const x = vanishingX + xOffset * (1 - t); // Linear perspective for x-coordinate
+        // Stop the lines a bit before the horizon
+        const y = this.horizonY + stopBeforeHorizon + (height - this.horizonY - stopBeforeHorizon) * (1 - t);
+        const x = vanishingX + xOffset * (1 - t);
         this.groundGrid.lineTo(x, y);
       }
 
