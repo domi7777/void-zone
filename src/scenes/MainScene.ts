@@ -88,12 +88,8 @@ export default class MainScene extends Phaser.Scene {
       const y = this.horizonY + (height - this.horizonY) * progress;
       
       if (y >= this.horizonY && y <= height) {
-        const perspectiveWidth = gridWidth * (1 - progress);
-        // const lineStartX = vanishingX - (perspectiveWidth / 2);
-        // const lineEndX = vanishingX + (perspectiveWidth / 2);
-
         const lineStartX = 0;
-        const lineEndX = 500;
+        const lineEndX = width;
         
         this.groundGrid.beginPath();
         this.groundGrid.moveTo(lineStartX, y);
@@ -104,23 +100,24 @@ export default class MainScene extends Phaser.Scene {
 
     // Draw vertical lines
     for (let col = 0; col <= this.gridColumns; col++) {
-      const xOffset = (col * columnWidth) - (gridWidth / 2);
-      this.groundGrid.beginPath();
+      // Calculate base position at bottom of screen
+      const normalizedCol = col / this.gridColumns - 0.5; // -0.5 to 0.5
+      const xOffset = normalizedCol * gridWidth;
+      const startX = vanishingX + xOffset;
       
-      // Start from the bottom
-      let bottomProgress = 0;
-      let y = height;
-      let x = vanishingX + (xOffset * (1 - bottomProgress));
-      this.groundGrid.moveTo(x, y);
+      this.groundGrid.beginPath();
+      this.groundGrid.moveTo(startX, height);
 
-      // Draw line segments with matching perspective
-      for (let t = 0; t <= 1; t += 0.02) {
-        const progress = Math.pow(t, 3); // Match the horizontal line perspective
-        y = this.horizonY + (height - this.horizonY) * (1 - progress);
-        x = vanishingX + (xOffset * (1 - progress));
+      // Draw straight lines from bottom to horizon with linear perspective
+      const numPoints = 50;
+      for (let i = 0; i <= numPoints; i++) {
+        const t = i / numPoints;
+        // Linear interpolation for vertical lines
+        const y = this.horizonY + (height - this.horizonY) * (1 - t);
+        const x = vanishingX + xOffset * (1 - t); // Linear perspective for x-coordinate
         this.groundGrid.lineTo(x, y);
       }
-      
+
       this.groundGrid.strokePath();
     }
   }
