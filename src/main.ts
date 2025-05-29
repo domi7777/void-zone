@@ -12,6 +12,11 @@ const config: Phaser.Types.Core.GameConfig = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH
   },
+  // //fps
+  // fps: {
+  //   target: 30,
+  //   forceSetTimeOut: true
+  // },
   parent: 'game-container',
 };
 

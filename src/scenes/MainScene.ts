@@ -10,8 +10,7 @@ export default class MainScene extends Phaser.Scene {
   private gridZ: number = 0;
   private readonly scrollSpeed: number = 4;
   private readonly cellSize: number = 60;
-  private readonly maxDepth: number = 15;
-  private readonly perspectiveStrength: number = 2; // Controls how quickly lines spread out
+  private readonly maxDepth: number = 20;
   
   private pointer: Phaser.Input.Pointer | null = null;
 
@@ -76,22 +75,25 @@ export default class MainScene extends Phaser.Scene {
     this.groundGrid.lineStyle(1, 0x00ff00);
 
     // Calculate base dimensions
-    const gridWidth = width * 1.5; // Increased for wider grid
+    const gridWidth = width * 1.5;
     const vanishingX = width / 2;
     const columnWidth = gridWidth / this.gridColumns;
     const totalDepth = this.cellSize * this.maxDepth;
 
-    // Draw horizontal lines
+    // Draw horizontal lines with increasing gaps
     for (let z = 0; z < totalDepth; z += this.cellSize) {
       const currentZ = (z + this.gridZ) % totalDepth;
-      const progress = 1 - (currentZ / totalDepth);
-      const y = this.getScaledY(progress, height);
+      const t = 1 - (currentZ / totalDepth);
+      const progress = Math.pow(t, 3);
+      const y = this.horizonY + (height - this.horizonY) * progress;
       
       if (y >= this.horizonY && y <= height) {
-        // Linear perspective scaling
-        const perspectiveWidth = gridWidth * progress;
-        const lineStartX = vanishingX - (perspectiveWidth / 2);
-        const lineEndX = vanishingX + (perspectiveWidth / 2);
+        const perspectiveWidth = gridWidth * (1 - progress);
+        // const lineStartX = vanishingX - (perspectiveWidth / 2);
+        // const lineEndX = vanishingX + (perspectiveWidth / 2);
+
+        const lineStartX = 0;
+        const lineEndX = 500;
         
         this.groundGrid.beginPath();
         this.groundGrid.moveTo(lineStartX, y);
@@ -105,17 +107,17 @@ export default class MainScene extends Phaser.Scene {
       const xOffset = (col * columnWidth) - (gridWidth / 2);
       this.groundGrid.beginPath();
       
-      // Draw from bottom to horizon
+      // Start from the bottom
+      let bottomProgress = 0;
       let y = height;
-      let x = vanishingX + xOffset;
+      let x = vanishingX + (xOffset * (1 - bottomProgress));
       this.groundGrid.moveTo(x, y);
-      
-      while (y > this.horizonY) {
-        // Calculate perspective for this vertical position
-        const progress = (y - this.horizonY) / (height - this.horizonY);
-        x = vanishingX + (xOffset * progress);
-        y -= 5; // Smaller steps for smoother lines
-        
+
+      // Draw line segments with matching perspective
+      for (let t = 0; t <= 1; t += 0.02) {
+        const progress = Math.pow(t, 3); // Match the horizontal line perspective
+        y = this.horizonY + (height - this.horizonY) * (1 - progress);
+        x = vanishingX + (xOffset * (1 - progress));
         this.groundGrid.lineTo(x, y);
       }
       
