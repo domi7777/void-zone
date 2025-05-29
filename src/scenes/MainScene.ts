@@ -108,14 +108,16 @@ export default class MainScene extends Phaser.Scene {
       this.groundGrid.beginPath();
       this.groundGrid.moveTo(startX, height);
 
-      // Draw straight lines from bottom to near horizon
+      // Draw slightly curved lines from bottom to near horizon
       const numPoints = 50;
-      const stopBeforeHorizon = -50; // pixels before horizon
+      const stopBeforeHorizon = -0; // pixels before horizon
       for (let i = 0; i <= numPoints; i++) {
         const t = i / numPoints;
-        // Stop the lines a bit before the horizon
+        // Add subtle curve with quadratic easing
+        const curve = t * t;
+        const blend = 0.7; // Blend between linear and curved (0.85 = 85% linear, 15% curved)
         const y = this.horizonY + stopBeforeHorizon + (height - this.horizonY - stopBeforeHorizon) * (1 - t);
-        const x = vanishingX + xOffset * (1 - t);
+        const x = vanishingX + xOffset * (1 - (t * blend + curve * (1 - blend)));
         this.groundGrid.lineTo(x, y);
       }
 
