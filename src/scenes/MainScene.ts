@@ -127,12 +127,13 @@ export default class MainScene extends Phaser.Scene {
     this.scoreText.setText(`Score: ${this.score}`);
     
     // Flash player and restore color
+    const flashCount = Math.floor(this.invulnerabilityTime / 200); // 2 flashes per 200ms
     this.tweens.add({
       targets: this.player,
       alpha: 0.5,
       duration: 100,
       yoyo: true,
-      repeat: 7,
+      repeat: flashCount * 2 - 1,
       onComplete: () => {
         this.player.setFillStyle(0x00ff00);
         this.isInvulnerable = false;
