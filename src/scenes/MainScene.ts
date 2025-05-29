@@ -116,7 +116,7 @@ export default class MainScene extends Phaser.Scene {
     // Set invulnerability
     this.isInvulnerable = true;
     
-    // Visual feedback
+    // Visual feedback - start with red flashing
     this.player.setFillStyle(0xff0000);
     
     // Screen shake effect
@@ -126,17 +126,31 @@ export default class MainScene extends Phaser.Scene {
     this.score = Math.max(0, this.score - 50);
     this.scoreText.setText(`Score: ${this.score}`);
     
-    // Flash player and restore color
-    const flashCount = Math.floor(this.invulnerabilityTime / 200); // 2 flashes per 200ms
+    // Flash red for 500ms
     this.tweens.add({
       targets: this.player,
       alpha: 0.5,
       duration: 100,
       yoyo: true,
-      repeat: flashCount * 2 - 1,
+      repeat: 4, // 5 flashes total in 500ms
       onComplete: () => {
+        // Switch to green flashing after red period
         this.player.setFillStyle(0x00ff00);
-        this.isInvulnerable = false;
+        
+        const remainingTime = this.invulnerabilityTime - 500;
+        const flashCount = Math.floor(remainingTime / 200); // 2 flashes per 200ms
+        
+        this.tweens.add({
+          targets: this.player,
+          alpha: 0.5,
+          duration: 100,
+          yoyo: true,
+          repeat: flashCount * 2 - 1,
+          onComplete: () => {
+            this.player.setAlpha(1);
+            this.isInvulnerable = false;
+          }
+        });
       }
     });
   }
