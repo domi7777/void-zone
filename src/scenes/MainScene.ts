@@ -1,68 +1,105 @@
 import Phaser from 'phaser';
 
+interface GridLine {
+  line: Phaser.GameObjects.Graphics;
+  z: number;
+}
+
 export default class MainScene extends Phaser.Scene {
-  private roadGraphics!: Phaser.GameObjects.Graphics;
-  private spaceship!: Phaser.GameObjects.Triangle;
-  private roadLines: Phaser.GameObjects.Line[] = [];
-  private centerX!: number;
+  private player!: Phaser.GameObjects.Triangle;
+  private groundGrid!: Phaser.GameObjects.Graphics;
+  private readonly horizonY: number = 200;
+  private readonly gridSpacing: number = 50;
+  private readonly maxZ: number = 1000;
+  private pointer: Phaser.Input.Pointer | null = null;
+  private gridOffset: number = 0;
+  private readonly verticalLines: number = 10; // Number of vertical lines on each side
 
   constructor() {
     super('MainScene');
   }
 
-  preload() {
-    // Preload assets if needed
-  }
-
   create() {
-    this.centerX = this.cameras.main.width / 2;
-    const centerY = this.cameras.main.height / 2;
+    // Create ground grid
+    this.groundGrid = this.add.graphics();
 
-    // Draw the road
-    this.roadGraphics = this.add.graphics({ lineStyle: { width: 2, color: 0xffffff } });
-    this.roadGraphics.fillStyle(0x333333, 1);
-    this.roadGraphics.beginPath();
-    this.roadGraphics.moveTo(this.centerX - 200, this.cameras.main.height);
-    this.roadGraphics.lineTo(this.centerX, centerY);
-    this.roadGraphics.lineTo(this.centerX + 200, this.cameras.main.height);
-    this.roadGraphics.closePath();
-    this.roadGraphics.fillPath();
+    // Create player
+    const centerX = this.cameras.main.width / 2;
+    const playerY = this.cameras.main.height - 100;
+    this.player = this.add.triangle(centerX, playerY, 0, 0, 20, 40, 40, 0, 0x00ff00);
+    this.player.setOrigin(0.5, 0.5);
 
-    // Create horizontal lines for perspective
-    for (let i = 0; i < 10; i++) {
-      const y = this.cameras.main.height - i * 50;
-      const startX = this.centerX - 200 + i * 20;
-      const endX = this.centerX + 200 - i * 20;
-      const line = this.add.line(0, 0, startX, y, endX, y, 0xffffff);
-      line.setOrigin(0, 0);
-      this.roadLines.push(line);
-    }
+    // Setup touch input
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      this.pointer = pointer;
+    });
 
-    // Create the spaceship
-    this.spaceship = this.add.triangle(this.centerX, this.cameras.main.height - 50, 0, 0, 40, 80, 80, 0, 0xffffff);
-    this.spaceship.setOrigin(0.5, 0.5);
+    this.input.on('pointerup', () => {
+      this.pointer = null;
+    });
 
-    // Add keyboard controls
-    if (this.input.keyboard) {
-      this.input.keyboard.on('keydown-LEFT', () => {
-        this.spaceship.x -= 10;
-      });
-      this.input.keyboard.on('keydown-RIGHT', () => {
-        this.spaceship.x += 10;
-      });
-    }
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      if (this.pointer) {
+        const deltaX = pointer.x - this.pointer.x;
+        const deltaY = pointer.y - this.pointer.y;
+        
+        // Move player with constraints
+        this.player.x = Phaser.Math.Clamp(
+          this.player.x + deltaX,
+          50,
+          this.cameras.main.width - 50
+        );
+        this.player.y = Phaser.Math.Clamp(
+          this.player.y + deltaY,
+          this.cameras.main.height / 2,
+          this.cameras.main.height - 50
+        );
+        
+        // Update pointer position
+        this.pointer = pointer;
+      }
+    });
   }
 
   update() {
-    // Move horizontal lines to simulate perspective motion
-    this.roadLines.forEach((line, index) => {
-      line.y += 5;
-      if (line.y > this.cameras.main.height) {
-        line.y = 0;
-        const startX = this.centerX - 200 + index * 20;
-        const endX = this.centerX + 200 - index * 20;
-        line.setTo(startX, line.y, endX, line.y);
-      }
-    });
+    // Update grid offset for scrolling effect
+    this.gridOffset = (this.gridOffset + 2) % this.gridSpacing;
+    this.updateGroundGrid();
+  }
+
+  private updateGroundGrid() {
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+    const vanishingPointX = width / 2;
+    const groundY = height;
+
+    this.groundGrid.clear();
+    this.groundGrid.lineStyle(1, 0x00ff00);
+
+    // Draw horizontal lines with perspective
+    for (let z = this.gridOffset; z < this.maxZ; z += this.gridSpacing) {
+      const perspective = 1 - (z / this.maxZ);
+      const y = this.horizonY + (groundY - this.horizonY) * perspective;
+      
+      // Calculate width at this depth
+      const lineWidth = width * (1 - perspective * 0.8); // 0.8 to keep some width at horizon
+      
+      // Draw horizontal line
+      this.groundGrid.beginPath();
+      this.groundGrid.moveTo(vanishingPointX - lineWidth / 2, y);
+      this.groundGrid.lineTo(vanishingPointX + lineWidth / 2, y);
+      this.groundGrid.strokePath();
+    }
+
+    // Draw vertical lines converging to vanishing point
+    for (let i = -this.verticalLines; i <= this.verticalLines; i++) {
+      const xRatio = i / this.verticalLines;
+      const startX = vanishingPointX + width * 0.5 * xRatio;
+      
+      this.groundGrid.beginPath();
+      this.groundGrid.moveTo(startX, groundY);
+      this.groundGrid.lineTo(vanishingPointX, this.horizonY);
+      this.groundGrid.strokePath();
+    }
   }
 }
