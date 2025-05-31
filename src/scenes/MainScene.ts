@@ -194,51 +194,128 @@ export default class MainScene extends Phaser.Scene {
     const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.7);
     overlay.setOrigin(0, 0);
     
-    // Add game over text
+    // Create a graphics object for glowing text effects
+    const glowGraphics = this.add.graphics();
+    
+    // Add game over text with glow effect
     const gameOverText = this.add.text(width / 2, height / 2 - 50, 'GAME OVER', {
-      fontSize: '64px',
-      color: '#ff0000',
-      fontStyle: 'bold'
+      fontSize: '48px',
+      color: '#00ff00',
+      fontStyle: 'bold',
+      stroke: '#00ff00',
+      strokeThickness: 2,
+      shadowBlur: 4,
+      shadowColor: '#00ff00',
+      shadowStroke: true,
+      shadowFill: true
     });
     gameOverText.setOrigin(0.5);
     
-    // Add score text
+    // Add score text with same style
     const finalScoreText = this.add.text(width / 2, height / 2 + 30, '', {
-      fontSize: '32px',
-      color: '#ffffff'
+      fontSize: '24px',
+      color: '#00ff00',
+      stroke: '#00ff00',
+      strokeThickness: 1,
+      shadowBlur: 2,
+      shadowColor: '#00ff00',
+      shadowStroke: true,
+      shadowFill: true
     });
     finalScoreText.setOrigin(0.5);
     
-    // Add try again button
-    const tryAgainButton = this.add.rectangle(width / 2, height / 2 + 100, 200, 50, 0x00ff00, 0.8);
+    // Add try again button with neon effect
+    const buttonWidth = 200;
+    const buttonHeight = 50;
+    const buttonX = width / 2;
+    const buttonY = height / 2 + 100;
+    
+    // Draw button outline with glow
+    glowGraphics.lineStyle(2, 0x00ff00, 1);
+    glowGraphics.strokeRect(
+      buttonX - buttonWidth/2,
+      buttonY - buttonHeight/2,
+      buttonWidth,
+      buttonHeight
+    );
+    
+    // Add subtle glow around the button
+    glowGraphics.lineStyle(4, 0x00ff00, 0.3);
+    glowGraphics.strokeRect(
+      buttonX - buttonWidth/2 - 2,
+      buttonY - buttonHeight/2 - 2,
+      buttonWidth + 4,
+      buttonHeight + 4
+    );
+    
+    // Create invisible button hit area
+    const tryAgainButton = this.add.rectangle(buttonX, buttonY, buttonWidth, buttonHeight, 0x000000, 0);
     tryAgainButton.setInteractive({ useHandCursor: true });
     
-    const buttonText = this.add.text(width / 2, height / 2 + 100, 'Try Again?', {
+    const buttonText = this.add.text(buttonX, buttonY, 'Try Again?', {
       fontSize: '24px',
-      color: '#ffffff'
+      color: '#00ff00',
+      stroke: '#00ff00',
+      strokeThickness: 1
     });
     buttonText.setOrigin(0.5);
     
     // Add hover effects
     tryAgainButton.on('pointerover', () => {
-      tryAgainButton.setFillStyle(0x00ff00, 1);
+      glowGraphics.clear();
+      // Brighter glow on hover
+      glowGraphics.lineStyle(2, 0x00ff00, 1);
+      glowGraphics.strokeRect(
+        buttonX - buttonWidth/2,
+        buttonY - buttonHeight/2,
+        buttonWidth,
+        buttonHeight
+      );
+      glowGraphics.lineStyle(8, 0x00ff00, 0.5);
+      glowGraphics.strokeRect(
+        buttonX - buttonWidth/2 - 4,
+        buttonY - buttonHeight/2 - 4,
+        buttonWidth + 8,
+        buttonHeight + 8
+      );
       buttonText.setScale(1.1);
     });
     
     tryAgainButton.on('pointerout', () => {
-      tryAgainButton.setFillStyle(0x00ff00, 0.8);
+      glowGraphics.clear();
+      glowGraphics.lineStyle(2, 0x00ff00, 1);
+      glowGraphics.strokeRect(
+        buttonX - buttonWidth/2,
+        buttonY - buttonHeight/2,
+        buttonWidth,
+        buttonHeight
+      );
+      glowGraphics.lineStyle(4, 0x00ff00, 0.3);
+      glowGraphics.strokeRect(
+        buttonX - buttonWidth/2 - 2,
+        buttonY - buttonHeight/2 - 2,
+        buttonWidth + 4,
+        buttonHeight + 4
+      );
       buttonText.setScale(1);
     });
     
     // Add click handler with visual feedback
     tryAgainButton.on('pointerdown', () => {
-      tryAgainButton.setFillStyle(0x008800, 1);
+      glowGraphics.clear();
+      glowGraphics.lineStyle(2, 0x008800, 1);
+      glowGraphics.strokeRect(
+        buttonX - buttonWidth/2,
+        buttonY - buttonHeight/2,
+        buttonWidth,
+        buttonHeight
+      );
       buttonText.setScale(0.9);
       this.time.delayedCall(100, () => this.restartGame());
     });
     
     // Add all elements to container
-    this.gameOverContainer.add([overlay, gameOverText, finalScoreText, tryAgainButton, buttonText]);
+    this.gameOverContainer.add([overlay, glowGraphics, gameOverText, finalScoreText, tryAgainButton, buttonText]);
     
     // Hide container initially
     this.gameOverContainer.setVisible(false);
@@ -249,7 +326,7 @@ export default class MainScene extends Phaser.Scene {
     this.gameOverContainer.setVisible(true);
     
     // Update final score
-    const finalScoreText = this.gameOverContainer.list[2] as Phaser.GameObjects.Text;
+    const finalScoreText = this.gameOverContainer.list[3] as Phaser.GameObjects.Text;
     finalScoreText.setText(`Final Score: ${this.score}`);
     
     // Stop gameplay
