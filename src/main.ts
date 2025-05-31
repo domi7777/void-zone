@@ -8,15 +8,15 @@ const config: Phaser.Types.Core.GameConfig = {
   height: 844, // iPhone-like height
   backgroundColor: '#000000',
   scene: MainScene,
+  pixelArt: false, // Enable anti-aliasing
+  antialias: true, // Enable anti-aliasing
+  roundPixels: false, // Disable pixel rounding for smoother graphics
   scale: {
     mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    autoRound: false, // Prevent pixel rounding
+    zoom: window.devicePixelRatio // Use zoom for high DPI instead of resolution
   },
-  // //fps
-  // fps: {
-  //   target: 30,
-  //   forceSetTimeOut: true
-  // },
   parent: 'game-container',
 };
 

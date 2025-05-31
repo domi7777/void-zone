@@ -2,9 +2,10 @@ import Phaser from 'phaser';
 import { BackgroundGrid } from '../game/BackgroundGrid';
 import { Obstacle } from '../game/Obstacle';
 import { GameConfig } from '../config/GameConfig';
+import { Player } from '../game/Player';
 
 export default class MainScene extends Phaser.Scene {
-  private player!: Phaser.GameObjects.Triangle;
+  private player!: Player;
   private backgroundGrid!: BackgroundGrid;
   private targetX: number = 0;
   private targetY: number = 0;
@@ -29,11 +30,10 @@ export default class MainScene extends Phaser.Scene {
   create() {
     this.backgroundGrid = new BackgroundGrid(this);
 
-    // Create player
+    // Create player at the center bottom of the screen
     const centerX = this.cameras.main.width / 2;
     const playerY = this.cameras.main.height - 100;
-    this.player = this.add.triangle(centerX, playerY, 0, 0, 20, 40, 40, 0, 0x00ff00);
-    this.player.setOrigin(0.5, 0.5);
+    this.player = new Player(this, centerX, playerY);
     
     // Initialize target position to player's starting position
     this.targetX = centerX;
@@ -119,7 +119,7 @@ export default class MainScene extends Phaser.Scene {
     this.isInvulnerable = true;
     
     // Visual feedback - start with red flashing
-    this.player.setFillStyle(0xff0000);
+    this.player.setColor(0xff0000);
     
     // Screen shake effect
     this.cameras.main.shake(200, 0.01);
@@ -137,7 +137,7 @@ export default class MainScene extends Phaser.Scene {
       repeat: 4, // 5 flashes total in 500ms
       onComplete: () => {
         // Switch to green flashing after red period
-        this.player.setFillStyle(0x00ff00);
+        this.player.setColor(0x00ff00);
         
         const remainingTime = this.invulnerabilityTime - 500;
         const flashCount = Math.floor(remainingTime / 200); // 2 flashes per 200ms

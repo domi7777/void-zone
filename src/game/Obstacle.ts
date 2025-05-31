@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { IObstacle } from '../interfaces/GameObjects';
 import { GameConfig } from '../config/GameConfig';
 import { ObstacleType, ShapeFactory } from './shapes/ShapeFactory';
+import type { Player } from './Player';
 
 export class Obstacle extends Phaser.GameObjects.Container implements IObstacle {
     private readonly shape: Phaser.GameObjects.Graphics;
@@ -40,7 +41,7 @@ export class Obstacle extends Phaser.GameObjects.Container implements IObstacle 
         const scale = this.getScale();
         const size = GameConfig.OBSTACLES.BASE_SIZE * scale;
         
-        this.shape.lineStyle(2 * scale, this.color);
+        this.shape.lineStyle(2 * scale, this.color, 1.0);
         
         // Get the appropriate shape from factory and draw it
         const shape = ShapeFactory.getShape(this.shapeType);
@@ -78,7 +79,7 @@ export class Obstacle extends Phaser.GameObjects.Container implements IObstacle 
         return Phaser.Math.Linear(3, 0.1, progress);
     }
 
-    public isCollidingWith(player: Phaser.GameObjects.Triangle): boolean {
+    public isCollidingWith(player: Player): boolean {
         const scale = this.getScale();
         const size = GameConfig.OBSTACLES.BASE_SIZE * scale;
         

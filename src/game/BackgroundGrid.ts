@@ -12,7 +12,13 @@ export class BackgroundGrid {
     private readonly maxDepth: number = 20;
 
     constructor(scene: Phaser.Scene) {
-        this.groundGrid = scene.add.graphics();
+        this.groundGrid = scene.add.graphics({
+            lineStyle: {
+                width: 1,
+                alpha: 1,
+                color: 0x00ff00
+            }
+        });
     }
 
     update() {
@@ -25,7 +31,6 @@ export class BackgroundGrid {
         const height = this.groundGrid.scene.cameras.main.height;
         
         this.groundGrid.clear();
-        this.groundGrid.lineStyle(1, 0x00ff00);
 
         // Calculate base dimensions
         const gridWidth = width * 1.5;
@@ -42,7 +47,9 @@ export class BackgroundGrid {
             if (y >= this.horizonY && y <= height) {
                 const lineStartX = 0;
                 const lineEndX = width;
+                const alpha = Math.min(1, (y - this.horizonY) / (height - this.horizonY));
                 
+                this.groundGrid.lineStyle(1, 0x00ff00, alpha * 0.8);
                 this.groundGrid.beginPath();
                 this.groundGrid.moveTo(lineStartX, y);
                 this.groundGrid.lineTo(lineEndX, y);
@@ -60,8 +67,8 @@ export class BackgroundGrid {
             this.groundGrid.beginPath();
             this.groundGrid.moveTo(startX, height);
 
-            // Draw slightly curved lines from bottom to near horizon
-            const numPoints = 50;
+            // Draw slightly curved lines from bottom to near horizon with improved quality
+            const numPoints = 100; // Increased number of points for smoother curves
             const stopBeforeHorizon = -0; // pixels before horizon
             for (let i = 0; i <= numPoints; i++) {
                 const t = i / numPoints;
@@ -70,7 +77,16 @@ export class BackgroundGrid {
                 const blend = 0.7; // Blend between linear and curved
                 const y = this.horizonY + stopBeforeHorizon + (height - this.horizonY - stopBeforeHorizon) * (1 - t);
                 const x = vanishingX + xOffset * (1 - (t * blend + curve * (1 - blend)));
-                this.groundGrid.lineTo(x, y);
+                
+                // Set line style with varying alpha for depth effect
+                const alpha = Math.min(1, 1 - t * 0.8);
+                this.groundGrid.lineStyle(1, 0x00ff00, alpha * 0.8);
+                
+                if (i === 0) {
+                    this.groundGrid.moveTo(x, y);
+                } else {
+                    this.groundGrid.lineTo(x, y);
+                }
             }
 
             this.groundGrid.strokePath();
