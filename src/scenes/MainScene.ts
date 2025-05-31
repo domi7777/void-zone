@@ -133,15 +133,6 @@ export default class MainScene extends Phaser.Scene {
   }
 
   private handleCollision() {
-    // Reduce lives
-    this.lives--;
-    this.livesText.setText(`Lives: ${this.lives}`);
-
-    if (this.lives <= 0) {
-      this.showGameOver();
-      return;
-    }
-
     // Set invulnerability
     this.isInvulnerable = true;
     
