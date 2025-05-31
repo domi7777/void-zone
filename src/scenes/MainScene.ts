@@ -198,29 +198,28 @@ export default class MainScene extends Phaser.Scene {
     const glowGraphics = this.add.graphics();
     
     // Add game over text with glow effect
-    const gameOverText = this.add.text(width / 2, height / 2 - 50, 'GAME OVER', {
+    const textStyle = {
       fontSize: '48px',
       color: '#00ff00',
       fontStyle: 'bold',
       stroke: '#00ff00',
-      strokeThickness: 2,
-      shadowBlur: 4,
-      shadowColor: '#00ff00',
-      shadowStroke: true,
-      shadowFill: true
-    });
+      strokeThickness: 1,
+      shadow: {
+        blur: 1,
+        offsetX: 0,
+        offsetY: 0,
+        color: '#00ff00',
+        fill: false,
+        stroke: true
+      },
+    };
+    const gameOverText = this.add.text(width / 2, height / 2 - 50, 'GAME OVER', textStyle);
     gameOverText.setOrigin(0.5);
     
     // Add score text with same style
     const finalScoreText = this.add.text(width / 2, height / 2 + 30, '', {
+      ...textStyle,
       fontSize: '24px',
-      color: '#00ff00',
-      stroke: '#00ff00',
-      strokeThickness: 1,
-      shadowBlur: 2,
-      shadowColor: '#00ff00',
-      shadowStroke: true,
-      shadowFill: true
     });
     finalScoreText.setOrigin(0.5);
     
