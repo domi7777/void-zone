@@ -17,11 +17,17 @@ export default class MainScene extends Phaser.Scene {
   private readonly obstacleSpeed: number = GameConfig.OBSTACLES.SPEED;
   private readonly spawnInterval: number = GameConfig.OBSTACLES.SPAWN_INTERVAL;
 
-  // Score tracking
+  // Score and lives tracking
   private score: number = 0;
+  private lives: number = GameConfig.SCORING.STARTING_LIVES;
   private scoreText!: Phaser.GameObjects.Text;
+  private livesText!: Phaser.GameObjects.Text;
   private isInvulnerable: boolean = false;
   private readonly invulnerabilityTime: number = GameConfig.PLAYER.INVULNERABILITY_TIME;
+  
+  // Game over overlay
+  private gameOverContainer!: Phaser.GameObjects.Container;
+  private isGameOver: boolean = false;
 
   constructor() {
     super('MainScene');
@@ -53,18 +59,28 @@ export default class MainScene extends Phaser.Scene {
       );
     });
 
-    // Add score text
+    // Add score and lives text
     this.scoreText = this.add.text(16, 16, 'Score: 0', {
       fontSize: '32px',
       color: '#fff'
     });
     
+    this.livesText = this.add.text(16, 56, `Lives: ${this.lives}`, {
+      fontSize: '32px',
+      color: '#fff'
+    });
+
+    // Create game over overlay (hidden by default)
+    this.createGameOverOverlay();
+    
     // Start score incrementing
     this.time.addEvent({
-      delay: 100, // Increase score every 100ms
+      delay: GameConfig.SCORING.TICK_INTERVAL,
       callback: () => {
-        this.score += 1;
-        this.scoreText.setText(`Score: ${this.score}`);
+        if (!this.isGameOver) {
+          this.score += GameConfig.SCORING.POINTS_PER_TICK;
+          this.scoreText.setText(`Score: ${this.score}`);
+        }
       },
       loop: true
     });
@@ -74,6 +90,8 @@ export default class MainScene extends Phaser.Scene {
   }
 
   update(time: number) {
+    if (this.isGameOver) return;
+    
     this.backgroundGrid.update();
     
     // Smoothly move player towards target position using lerp
@@ -115,6 +133,15 @@ export default class MainScene extends Phaser.Scene {
   }
 
   private handleCollision() {
+    // Reduce lives
+    this.lives--;
+    this.livesText.setText(`Lives: ${this.lives}`);
+
+    if (this.lives <= 0) {
+      this.showGameOver();
+      return;
+    }
+
     // Set invulnerability
     this.isInvulnerable = true;
     
@@ -124,9 +151,17 @@ export default class MainScene extends Phaser.Scene {
     // Screen shake effect
     this.cameras.main.shake(200, 0.01);
     
-    // Deduct points
-    this.score = Math.max(0, this.score - 50);
+    // Deduct points and lives
+    this.score = Math.max(0, this.score - GameConfig.SCORING.COLLISION_PENALTY);
+    this.lives--;
     this.scoreText.setText(`Score: ${this.score}`);
+    this.livesText.setText(`Lives: ${this.lives}`);
+    
+    // Check for game over
+    if (this.lives <= 0) {
+      this.showGameOver();
+      return;
+    }
     
     // Flash red for 500ms
     this.tweens.add({
@@ -155,5 +190,103 @@ export default class MainScene extends Phaser.Scene {
         });
       }
     });
+  }
+
+  private createGameOverOverlay(): void {
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+    
+    // Create container for game over elements
+    this.gameOverContainer = this.add.container(0, 0);
+    
+    // Add semi-transparent background
+    const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.7);
+    overlay.setOrigin(0, 0);
+    
+    // Add game over text
+    const gameOverText = this.add.text(width / 2, height / 2 - 50, 'GAME OVER', {
+      fontSize: '64px',
+      color: '#ff0000',
+      fontStyle: 'bold'
+    });
+    gameOverText.setOrigin(0.5);
+    
+    // Add score text
+    const finalScoreText = this.add.text(width / 2, height / 2 + 30, '', {
+      fontSize: '32px',
+      color: '#ffffff'
+    });
+    finalScoreText.setOrigin(0.5);
+    
+    // Add try again button
+    const tryAgainButton = this.add.rectangle(width / 2, height / 2 + 100, 200, 50, 0x00ff00, 0.8);
+    tryAgainButton.setInteractive({ useHandCursor: true });
+    
+    const buttonText = this.add.text(width / 2, height / 2 + 100, 'Try Again?', {
+      fontSize: '24px',
+      color: '#ffffff'
+    });
+    buttonText.setOrigin(0.5);
+    
+    // Add hover effects
+    tryAgainButton.on('pointerover', () => {
+      tryAgainButton.setFillStyle(0x00ff00, 1);
+      buttonText.setScale(1.1);
+    });
+    
+    tryAgainButton.on('pointerout', () => {
+      tryAgainButton.setFillStyle(0x00ff00, 0.8);
+      buttonText.setScale(1);
+    });
+    
+    // Add click handler with visual feedback
+    tryAgainButton.on('pointerdown', () => {
+      tryAgainButton.setFillStyle(0x008800, 1);
+      buttonText.setScale(0.9);
+      this.time.delayedCall(100, () => this.restartGame());
+    });
+    
+    // Add all elements to container
+    this.gameOverContainer.add([overlay, gameOverText, finalScoreText, tryAgainButton, buttonText]);
+    
+    // Hide container initially
+    this.gameOverContainer.setVisible(false);
+  }
+
+  private showGameOver(): void {
+    this.isGameOver = true;
+    this.gameOverContainer.setVisible(true);
+    
+    // Update final score
+    const finalScoreText = this.gameOverContainer.list[2] as Phaser.GameObjects.Text;
+    finalScoreText.setText(`Final Score: ${this.score}`);
+    
+    // Stop gameplay
+    this.obstacles.forEach(obstacle => obstacle.destroy());
+    this.obstacles = [];
+  }
+
+  private restartGame(): void {
+    this.isGameOver = false;
+    this.gameOverContainer.setVisible(false);
+    this.score = 0;
+    this.lives = GameConfig.SCORING.STARTING_LIVES;
+    this.scoreText.setText('Score: 0');
+    this.livesText.setText(`Lives: ${this.lives}`);
+    this.isInvulnerable = false;
+    
+    // Reset player
+    const centerX = this.cameras.main.width / 2;
+    const playerY = this.cameras.main.height - 100;
+    this.player.setPosition(centerX, playerY);
+    this.player.setColor(0x00ff00);
+    this.player.setAlpha(1);
+    
+    // Clear obstacles
+    this.obstacles.forEach(obstacle => obstacle.destroy());
+    this.obstacles = [];
+    
+    // Reset spawn timer
+    this.nextObstacleSpawn = 0;
   }
 }

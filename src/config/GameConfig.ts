@@ -19,6 +19,7 @@ export const GameConfig = {
         POINTS_PER_TICK: 1,
         POINTS_PER_OBSTACLE: 10,
         COLLISION_PENALTY: 50,
+        STARTING_LIVES: 5,
         TICK_INTERVAL: 100,
     }
 } as const;
