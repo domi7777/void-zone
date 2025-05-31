@@ -1,25 +1,26 @@
 import Phaser from 'phaser';
 import { BackgroundGrid } from '../game/BackgroundGrid';
 import { Obstacle } from '../game/Obstacle';
+import { GameConfig } from '../config/GameConfig';
 
 export default class MainScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Triangle;
   private backgroundGrid!: BackgroundGrid;
   private targetX: number = 0;
   private targetY: number = 0;
-  private readonly moveSpeed: number = 0.03;
+  private readonly moveSpeed: number = GameConfig.PLAYER.MOVEMENT_SPEED;
 
   // Obstacle management
   private obstacles: Obstacle[] = [];
   private nextObstacleSpawn: number = 0;
-  private readonly obstacleSpeed: number = 8;
-  private readonly spawnInterval: number = 1000; // ms between spawns
+  private readonly obstacleSpeed: number = GameConfig.OBSTACLES.SPEED;
+  private readonly spawnInterval: number = GameConfig.OBSTACLES.SPAWN_INTERVAL;
 
   // Score tracking
   private score: number = 0;
   private scoreText!: Phaser.GameObjects.Text;
   private isInvulnerable: boolean = false;
-  private readonly invulnerabilityTime: number = 1500; // ms
+  private readonly invulnerabilityTime: number = GameConfig.PLAYER.INVULNERABILITY_TIME;
 
   constructor() {
     super('MainScene');
@@ -106,8 +107,9 @@ export default class MainScene extends Phaser.Scene {
   }
 
   private spawnObstacle() {
-    const x = Phaser.Math.Between(100, this.cameras.main.width - 100);
-    const z = 1000; // Start from far away
+    const margin = GameConfig.OBSTACLES.SPAWN_MARGIN;
+    const x = Phaser.Math.Between(margin, this.cameras.main.width - margin);
+    const z = GameConfig.OBSTACLES.MAX_Z;
     const obstacle = new Obstacle(this, x, z);
     this.obstacles.push(obstacle);
   }
